@@ -13,21 +13,20 @@ import java.util.Iterator;
 import java.util.List;
 import uet.oop.bomberman.entities.LayeredEntity;
 import uet.oop.bomberman.entities.bomb.Flame;
-import uet.oop.bomberman.entities.bomb.FlameSegment;
-import uet.oop.bomberman.entities.character.enemy.Balloon;
 import uet.oop.bomberman.entities.character.enemy.Enemy;
-import uet.oop.bomberman.entities.tile.Grass;
+import uet.oop.bomberman.entities.tile.Wall;
 import uet.oop.bomberman.entities.tile.item.Item;
 import uet.oop.bomberman.level.Coordinates;
-
+import uet.oop.bomberman.sound.Audio;
 
 public class Bomber extends Character {
 
     private List<Bomb> _bombs;
     protected Keyboard _input;
-    private int step = 5;
-    public static List<Item> _powerups = new ArrayList<>();
+    
+    public static List<Item> _powerups = new ArrayList<>(); 
     protected int _timeBetweenPutBombs = 0;
+   
     // Neu gia tri nay < 0 thi cho phep dat doi tuong Bomb tiep theo
     // Cu moi lan dat 1 Bomb moi, gia tri nay se duoc reset ve 0 va giam dan trong moi lan update()
     public Bomber(int x, int y, Board board) {
@@ -35,6 +34,7 @@ public class Bomber extends Character {
         _bombs = _board.getBombs();
         _input = _board.getInput();
         _sprite = Sprite.player_right;
+        
     }
 
     @Override
@@ -54,7 +54,7 @@ public class Bomber extends Character {
     @Override
     public void render(Screen screen) {
         calculateXOffset();
-
+        
         if (_alive)
             chooseSprite();
         else
@@ -66,6 +66,7 @@ public class Bomber extends Character {
     public void calculateXOffset() {
         int xScroll = Screen.calculateXOffset(_board, this);
         Screen.setOffset(xScroll, 0);
+        
     }
 
     // Kiem tra xem co dat duoc bom hay khong? neu co thi dat bom tai vi tri hien tai cua Bomber
@@ -75,7 +76,7 @@ public class Bomber extends Character {
          TODO: Game.getBombRate() se tra ve so luong bom co the dat lien tiep toi thoi diem hien tai
          TODO: _timeBetweenPutBombs dung de ngan chan Bomber dat 2 Bomb cung toi 1 vi tri trong 1 khoang thoi gian qua ngan
          TODO: Neu 3 dieu khien tren thoa man thi thuc hien dat bom bang placeBomb()
-         TODO: Sau khi dat, nho giam sat luong BOmb Rate va reset _timeBetweenPutBombs va 0
+         TODO: Sau khi dat, nho giam sat luong BombRate va reset _timeBetweenPutBombs va 0
         
             "_input.space: tin hieu dat bom tu nguoi choi"
         */
@@ -84,20 +85,25 @@ public class Bomber extends Character {
             placeBomb(getXTile(), getYTile());
             _timeBetweenPutBombs = 0;
             Game.addBombRate(-1);
+            
             _timeBetweenPutBombs = 30;
         }
     }
 
     protected void placeBomb(int x, int y) {
         // TODO: thuc hien tao doi tuong bom, dat vào vi trí (x, y)
+        
         Bomb b = new Bomb(x, y, _board);
         _board.addBomb(b);
+        
+        //TODO: am thanh dat bom
+        Audio.playBombDrop();
     }
 
     private void clearBombs() {
         Iterator<Bomb> bs = _bombs.iterator();
-
         Bomb b;
+        
         while (bs.hasNext()) {
             b = bs.next();
             if (b.isRemoved()) {
@@ -105,18 +111,25 @@ public class Bomber extends Character {
                 Game.addBombRate(1);
             }
         }
-
     }
 
     @Override
     public void kill() {
+        //TODO: am thanh game over
+        Audio.gameOver();
+        // TODO: dung am thanh man
+        //Audio.stopMenu();
+        
         if (!_alive) return;
         _alive = false;
+
     }
 
     @Override
     protected void afterKill() {
-        if (_timeAfter > 0) --_timeAfter;
+        if (_timeAfter > 0) {
+            --_timeAfter;
+        }
         else {
             _board.endGame();
         }
@@ -128,36 +141,25 @@ public class Bomber extends Character {
         // TODO: nhe cap nhat lai giá tri co _moving khi thay toi trang thái di chuyen
         // lay toc do di chuyen nhan vat = Game.getPlayerSpeed ()
         // khi di chuyen thi  co _moving = true, nguoc lai false        
-        step--;
-
+        
         _moving = true;
-
+        
         if (_input.up) {
             move(0, -Game.getBomberSpeed());
-        } else if (_input.down) {
+        } 
+        else if (_input.down) {
             move(0, Game.getBomberSpeed());
-        } else if (_input.left) {
+        } 
+        else if (_input.left) {
             move(-Game.getBomberSpeed(), 0);
-        } else if (_input.right) {
+        } 
+        else if (_input.right) {
             move(Game.getBomberSpeed(), 0);
-        } else {
+        } 
+        else {
             _moving = false;
         }
-         
-        /*
-        int xa = 0, ya = 0;
-        if(_input.left) xa--;
-        if(_input.right) xa++;
-        if(_input.up) ya--;
-        if(_input.down) ya++;
-        if(xa != 0 || ya != 0){
-            move(xa * Game.getBomberSpeed(), ya * Game.getBomberSpeed());
-            _moving = true;
-        }
-        else{
-            _moving = false;
-        }
-        */
+        
     }
 
     @Override
@@ -168,6 +170,7 @@ public class Bomber extends Character {
         int tileY = Coordinates.pixelToTile(y);
 
         Entity e = _board.getEntity(tileX, tileY, this);
+        
         return collide(e);
     }
 
@@ -189,12 +192,8 @@ public class Bomber extends Character {
         if (canMove(centerX + xa, centerY + ya)) {
             _x += xa;
             _y += ya;
-            if(step <= 0){
-                //Sound.play("walk");
-                step = 30;
-            }
         }
-
+        
         moveCenter();
     }
     
@@ -212,17 +211,10 @@ public class Bomber extends Character {
             this.kill();
             return false;
         }
-        else if(e.getSprite() == Sprite.bomb){
-            return true;
-        }
         else if (e instanceof LayeredEntity) {
             return e.collide(this);
         }
-        else if (e.getSprite() == Sprite.wall) {
-            return false;
-        }
-        else if (e instanceof Balloon) {
-            this.kill();
+        else if (e instanceof Wall) {
             return false;
         }
         return true;
@@ -230,37 +222,41 @@ public class Bomber extends Character {
     
     // Center
     public void centerX() {
-        int pixelOfEntity = Coordinates.tileToPixel(1);
+        int pixelE = Coordinates.tileToPixel(1);
         double centerX = _x + _sprite.get_realWidth() / 2;
-        int tileCenterX = Coordinates.pixelToTile(centerX);
-        _x = Coordinates.tileToPixel(tileCenterX) + pixelOfEntity / 2 - _sprite.get_realWidth() / 2;
+        int tileX = Coordinates.pixelToTile(centerX);
+        _x = Coordinates.tileToPixel(tileX) + pixelE / 2 - _sprite.get_realWidth() / 2;
     }
 
     public void centerY() {
-        int pixelOfEntity = Coordinates.tileToPixel(1);
+        int pixelE = Coordinates.tileToPixel(1);
         double centerY = _y - _sprite.get_realHeight() / 2;
-        int tileCenterY = Coordinates.pixelToTile(centerY);
-        _y = Coordinates.tileToPixel(tileCenterY) + pixelOfEntity / 2 + _sprite.get_realHeight() / 2;
+        int tileY = Coordinates.pixelToTile(centerY);
+        _y = Coordinates.tileToPixel(tileY) + pixelE / 2 + _sprite.get_realHeight() / 2;
     }
 
     public void moveCenter() {
-        int pixelOfEntity = Coordinates.tileToPixel(1);
+        int pixelE = Coordinates.tileToPixel(1);
         double centerX = _x + _sprite.get_realWidth() / 2;
         double centerY = _y - _sprite.get_realHeight() / 2;
 
-        boolean contactTop = !canMove(centerX, centerY - pixelOfEntity / 2);
-        boolean contactDown = !canMove(centerX, centerY + pixelOfEntity / 2);
-        boolean contactLeft = !canMove(centerX - pixelOfEntity / 2, centerY);
-        boolean contactRight = !canMove(centerX + pixelOfEntity / 2, centerY);
+        boolean contactTop = !canMove(centerX, centerY - pixelE / 2);
+        boolean contactDown = !canMove(centerX, centerY + pixelE / 2);
+        boolean contactLeft = !canMove(centerX - pixelE / 2, centerY);
+        boolean contactRight = !canMove(centerX + pixelE / 2, centerY);
 
         if (_direction != 0 && contactDown) centerY();
         if (_direction != 1 && contactLeft) centerX();
         if (_direction != 2 && contactTop) centerY();
         if (_direction != 3 && contactRight) centerX();
+        
     }
     
-    public void addPowerup(Item p) {
-		if(p.isRemoved()) return;
+        public void addPowerup(Item p) {
+                //TODO: am thanh khi bomber an item
+                Audio.playMenuMove();
+		
+                if(p.isRemoved()) return;
 		
 		_powerups.add(p);
 		
@@ -278,7 +274,7 @@ public class Bomber extends Character {
 	
 	public void removePowerups() {
 		for (int i = 0; i < _powerups.size(); i++) {
-				_powerups.remove(i);
+                        _powerups.remove(i);
 		}
 	}
     
